@@ -1,0 +1,540 @@
+openapi: 3.0.3
+info:
+  title: SURDOCS External Replacement API
+  version: 1.0.0
+  description: >
+    Proposed REST API contract to replace the legacy SURDOCS_EXTERNAL JSP/JSF
+    flows for search, document lookup, document access, and user comments.
+servers:
+  - url: https://example.dc.gov
+tags:
+  - name: Bootstrap
+  - name: Search
+  - name: Taxonomy
+  - name: Documents
+  - name: Comments
+  - name: Security
+paths:
+  /api/v1/bootstrap:
+    get:
+      tags: [Bootstrap]
+      summary: Get initial application bootstrap data
+      operationId: getBootstrap
+      responses:
+        '200':
+          description: Bootstrap payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapResponse'
+  /api/v1/search/ssl/options:
+    get:
+      tags: [Search]
+      summary: Get suffix options for a square or parcel-style query
+      operationId: getSslOptions
+      parameters:
+        - in: query
+          name: queryType
+          required: true
+          schema:
+            type: string
+            enum: [Square, Parcel, Reservation, Appropriation]
+        - in: query
+          name: square
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Suffix options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SslOptionsResponse'
+  /api/v1/search/ssl/lots:
+    get:
+      tags: [Search]
+      summary: Get lot options for a square/suffix combination
+      operationId: getSslLots
+      parameters:
+        - in: query
+          name: sslPrefix
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lot options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotOptionsResponse'
+  /api/v1/search/ssl/document-counts:
+    get:
+      tags: [Search]
+      summary: Get top-level document counts for an SSL
+      operationId: getDocumentCountsBySsl
+      parameters:
+        - in: query
+          name: ssl
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Counts by document class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentCountsResponse'
+  /api/v1/search/ssl/document-types/{documentType}/subtypes:
+    get:
+      tags: [Search]
+      summary: Get subtype counts for a selected document type and SSL
+      operationId: getSubtypeCounts
+      parameters:
+        - in: path
+          name: documentType
+          required: true
+          schema:
+            type: string
+            enum: [Book, Paper, Map, IndexCards]
+        - in: query
+          name: ssl
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subtype counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubtypeCountsResponse'
+  /api/v1/search/documents:
+    get:
+      tags: [Search]
+      summary: Search documents by SSL and selected type/subtype
+      operationId: searchDocuments
+      parameters:
+        - in: query
+          name: ssl
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: documentType
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: subtype
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: mapNumber
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: bookName
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSearchResponse'
+  /api/v1/book-types:
+    get:
+      tags: [Taxonomy]
+      summary: List available book types
+      operationId: getBookTypes
+      responses:
+        '200':
+          description: Book types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocTypeListResponse'
+  /api/v1/map-types:
+    get:
+      tags: [Taxonomy]
+      summary: List available map types
+      operationId: getMapTypes
+      responses:
+        '200':
+          description: Map types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocTypeListResponse'
+  /api/v1/index-card-types:
+    get:
+      tags: [Taxonomy]
+      summary: List available index card types
+      operationId: getIndexCardTypes
+      responses:
+        '200':
+          description: Index card types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocTypeListResponse'
+  /api/v1/document-subtypes/{subtype}/books:
+    get:
+      tags: [Taxonomy]
+      summary: List book folders under a selected subtype
+      operationId: getBooksForSubtype
+      parameters:
+        - in: path
+          name: subtype
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Book list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookListResponse'
+  /api/v1/books/{bookName}/pages:
+    get:
+      tags: [Taxonomy]
+      summary: List pages/documents under a selected book
+      operationId: getBookPages
+      parameters:
+        - in: path
+          name: bookName
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Page/document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageListResponse'
+  /api/v1/maps/{mapNumber}:
+    get:
+      tags: [Search]
+      summary: Resolve a map number to matching documents
+      operationId: getMapByNumber
+      parameters:
+        - in: path
+          name: mapNumber
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching map documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSearchResponse'
+        '404':
+          description: No map found
+  /api/v1/documents/{documentId}:
+    get:
+      tags: [Documents]
+      summary: Get single document metadata
+      operationId: getDocument
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+  /api/v1/documents/{documentId}/access-url:
+    post:
+      tags: [Documents]
+      summary: Generate a temporary viewer/download URL for a document
+      operationId: createDocumentAccessUrl
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentAccessRequest'
+      responses:
+        '200':
+          description: Access URL created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentAccessResponse'
+        '403':
+          description: CAPTCHA or authorization requirement not satisfied
+  /api/v1/comments:
+    post:
+      tags: [Comments]
+      summary: Submit a user comment
+      operationId: createComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentCreatedResponse'
+        '400':
+          description: Validation error
+  /api/v1/security/recaptcha/verify:
+    post:
+      tags: [Security]
+      summary: Verify a Google reCAPTCHA token
+      operationId: verifyRecaptcha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecaptchaVerifyRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecaptchaVerifyResponse'
+
+components:
+  schemas:
+    BootstrapResponse:
+      type: object
+      properties:
+        objectStoreId:
+          type: string
+        objectStoreName:
+          type: string
+        queryTypes:
+          type: array
+          items:
+            type: string
+        bookTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocTypeCount'
+        mapTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocTypeCount'
+      required: [queryTypes, bookTypes, mapTypes]
+    SslOptionsResponse:
+      type: object
+      properties:
+        square:
+          type: string
+        queryType:
+          type: string
+        suffixes:
+          type: array
+          items:
+            type: string
+      required: [square, queryType, suffixes]
+    LotOptionsResponse:
+      type: object
+      properties:
+        sslPrefix:
+          type: string
+        lots:
+          type: array
+          items:
+            type: string
+      required: [sslPrefix, lots]
+    DocumentCountsResponse:
+      type: object
+      properties:
+        ssl:
+          type: string
+        documentCounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocTypeCount'
+      required: [ssl, documentCounts]
+    SubtypeCountsResponse:
+      type: object
+      properties:
+        ssl:
+          type: string
+        documentType:
+          type: string
+        subtypeCounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocTypeCount'
+      required: [ssl, documentType, subtypeCounts]
+    DocTypeCount:
+      type: object
+      properties:
+        type:
+          type: string
+        count:
+          type: integer
+          format: int32
+      required: [type]
+    DocTypeListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocTypeCount'
+      required: [items]
+    BookListResponse:
+      type: object
+      properties:
+        subtype:
+          type: string
+        books:
+          type: array
+          items:
+            type: string
+      required: [subtype, books]
+    PageListResponse:
+      type: object
+      properties:
+        bookName:
+          type: string
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PageReference'
+      required: [bookName, pages]
+    PageReference:
+      type: object
+      properties:
+        label:
+          type: string
+        documentId:
+          type: string
+      required: [label, documentId]
+    DocumentSearchResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+      required: [items]
+    Document:
+      type: object
+      properties:
+        documentId:
+          type: string
+        guid:
+          type: string
+        versionSeriesId:
+          type: string
+        documentType:
+          type: string
+        subtype:
+          type: string
+        title:
+          type: string
+        pageNumber:
+          type: string
+        mimeType:
+          type: string
+        category:
+          type: string
+        sslValues:
+          type: array
+          items:
+            type: string
+        mapNumber:
+          type: string
+        bookName:
+          type: string
+        contentSize:
+          type: integer
+          format: int64
+      required: [documentId, documentType]
+    DocumentAccessRequest:
+      type: object
+      properties:
+        purpose:
+          type: string
+          enum: [view, download]
+        recaptchaToken:
+          type: string
+      required: []
+    DocumentAccessResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+        accessUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+      required: [documentId, accessUrl]
+    CreateCommentRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+        sourcePage:
+          type: string
+        userId:
+          type: string
+      required: [comment]
+    CommentCreatedResponse:
+      type: object
+      properties:
+        commentId:
+          type: string
+        filedPath:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [commentId, createdAt]
+    RecaptchaVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+      required: [token]
+    RecaptchaVerifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        score:
+          type: number
+          format: float
+        challengeTs:
+          type: string
+          format: date-time
+      required: [success]
