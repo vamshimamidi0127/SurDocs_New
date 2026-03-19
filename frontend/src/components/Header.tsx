@@ -19,7 +19,7 @@ export function Header() {
         >
           <MenuBookRoundedIcon />
           <Typography variant="h6" fontWeight={700}>
-            SURDOCS External
+            DOB Land Record Management System
           </Typography>
         </Box>
       </Toolbar>
